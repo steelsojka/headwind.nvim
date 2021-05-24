@@ -27,11 +27,15 @@ A list that determines Headwind's defauls sort order
 
 #### remove_duplicates
 
-Headwind will remove duplicate class names by default. This can be toggled on or off. This defaults to `false`.
+Headwind will remove duplicate class names by default. This can be toggled on or off. This defaults to `true`.
 
 #### prepend_custom_classes
 
-Headwind will append custom class names by default. They can be prepended instead. Defaults to `true`.
+Headwind will append custom class names by default. They can be prepended instead. Defaults to `false`.
+
+#### run_on_save
+
+Headwind will run on save by default (if a `tailwind.config.js` file is present within your working directory). This can be toggled on or off. Defaults to `true`.
 
 ## Usage
 

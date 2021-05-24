@@ -3,30 +3,46 @@ local Utils = require "headwind.utils"
 local M = {}
 
 local default_options = {
-  default_sort_order = require "headwind.default_sort_order",
-  class_regex = require "headwind.class_regex"
+  sort_tailwind_classes = require "headwind.default_sort_order",
+  class_regex = require "headwind.class_regex",
+  run_on_save = true,
+  remove_duplicates = true,
+  prepend_custom_classes = false,
+  custom_tailwind_prefix = ""
 }
 
 local global_options = {}
+local is_bound = false
+
+local function resolve_option(opts, name, is_bool)
+  if is_bool then
+    if opts[name] ~= nil then
+      return opts[name]
+    end
+
+    if global_options[name] ~= nil then
+      return global_options[name]
+    end
+
+    return default_options[name]
+  else
+    return opts[name]
+      or global_options[name]
+      or default_options[name]
+  end
+end
 
 local function make_options(opts)
   opts = opts or {}
-  opts.sort_tailwind_classes = opts.sort_tailwind_classes
-    or global_options.sort_tailwind_classes
-    or default_options.default_sort_order
+  opts.sort_tailwind_classes = resolve_option(opts, "sort_tailwind_classes")
   opts.class_regex = vim.tbl_extend("force", {},
     default_options.class_regex,
     global_options.class_regex or {},
     opts.class_regex or {})
-  opts.custom_tailwind_prefix = opts.custom_tailwind_prefix
-    or global_options.custom_tailwind_prefix
-    or ""
-  opts.prepend_custom_classes = (opts.prepend_custom_classes ~= nil and opts.prepend_custom_classes)
-    or (global_options.prepend_custom_classes ~= nil and global_options.prepend_custom_classes)
-    or true
-  opts.should_remove_duplicates = (opts.should_remove_duplicates ~= nil and opts.should_remove_duplicates)
-    or (global_options.should_remove_duplicates ~= nil and global_options.should_remove_duplicates)
-    or true
+  opts.custom_tailwind_prefix = resolve_option(opts, "custom_tailwind_prefix")
+  opts.prepend_custom_classes = resolve_option(opts, "prepend_custom_classes", true)
+  opts.remove_duplicates = resolve_option(opts, "remove_duplicates", true)
+  opts.run_on_save = resolve_option(opts, "run_on_save", true)
 
   return opts
 end
@@ -115,7 +131,7 @@ local function sort_class_str(class_str, sort_order, opts)
   local separator = opts.separator or "%s"
   local class_list = Utils.split_pattern(class_str, separator)
 
-  if opts.should_remove_duplicates then
+  if opts.remove_duplicates then
     class_list = Utils.dedupe(class_list)
   end
 
@@ -137,7 +153,19 @@ local function sort_class_str(class_str, sort_order, opts)
 end
 
 function M.setup(opts)
-  global_options = opts
+  global_options = vim.tbl_extend("force", global_options, opts or {})
+
+  opts = make_options(opts)
+
+  if opts.run_on_save and not is_bound then
+    is_bound = true
+    vim.cmd [[augroup Headwind]]
+    vim.cmd [[autocmd Headwind BufWritePre * lua require "headwind"._on_buf_write()]]
+    vim.cmd [[augroup END]]
+  elseif not opts.run_on_save and is_bound then
+    is_bound = false
+    vim.cmd [[augroup! Headwind]]
+  end
 end
 
 function M.buf_sort_tailwind_classes(bufnr, opts)
@@ -186,6 +214,15 @@ function M.buf_sort_tailwind_classes(bufnr, opts)
   end
 
   vim.lsp.util.apply_text_edits(edits, bufnr)
+end
+
+function M._on_buf_write()
+  local cwd = vim.fn.getcwd()
+  local path = cwd .. "/tailwind.config.js"
+
+  if vim.fn.filereadable(path) == 1 then
+    M.buf_sort_tailwind_classes()
+  end
 end
 
 return M
