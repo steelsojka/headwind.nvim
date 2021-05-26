@@ -111,4 +111,17 @@ function M.trim_str(str)
   return string.gsub(str, "^%s*(.-)%s*$", "%1")
 end
 
+function M.get_buf_lines(bufnr, range)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, range[1], range[3] + 1, false)
+
+  if range[1] == range[3] then
+    lines[1] = string.sub(lines[1], range[2] + 1, range[4])
+  else
+    lines[1] = string.sub(lines[1], range[2] + 1)
+    lines[#lines] = string.sub(lines[#lines], 1, range[4])
+  end
+
+  return lines
+end
+
 return M

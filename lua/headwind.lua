@@ -1,4 +1,6 @@
 local Utils = require "headwind.utils"
+local ts = require "vim.treesitter"
+local ts_query = require "vim.treesitter.query"
 
 local M = {}
 
@@ -8,7 +10,8 @@ local default_options = {
   run_on_save = true,
   remove_duplicates = true,
   prepend_custom_classes = false,
-  custom_tailwind_prefix = ""
+  custom_tailwind_prefix = "",
+  use_treesitter = false
 }
 
 local global_options = {}
@@ -43,6 +46,7 @@ local function make_options(opts)
   opts.prepend_custom_classes = resolve_option(opts, "prepend_custom_classes", true)
   opts.remove_duplicates = resolve_option(opts, "remove_duplicates", true)
   opts.run_on_save = resolve_option(opts, "run_on_save", true)
+  opts.use_treesitter = resolve_option(opts, "use_treesitter", true)
 
   return opts
 end
@@ -168,18 +172,71 @@ function M.setup(opts)
   end
 end
 
+local function sort_treesitter(bufnr, opts)
+  local root_lang_tree = ts.get_parser(bufnr, opts.ft)
+
+  if not root_lang_tree then return end
+
+  local ranges = {}
+  local sort_lookup_tbl = Utils.to_index_tbl(opts.sort_tailwind_classes)
+  local edits = {}
+
+  root_lang_tree:for_each_tree(function(tree, lang_tree)
+    local query = ts_query.get_query(lang_tree:lang(), "headwind")
+
+    for _, match, data in query:iter_matches(tree:root(), bufnr) do
+      for id, node in pairs(match) do
+        local name = query.captures[id]
+
+        if name == "classes" then
+          local range = {node:range()}
+
+          if type(data.content) == "table" and data.content[1] then
+            range = data.content[1]
+          end
+
+          table.insert(ranges, range)
+        end
+      end
+    end
+  end)
+
+  for _, range in ipairs(ranges) do
+    local start_line, start_col, end_line, end_col = unpack(range)
+    local lines = Utils.get_buf_lines(bufnr, range)
+    local text = table.concat(lines, "\n")
+    local sorted_classes = sort_class_str(text, sort_lookup_tbl, opts)
+    local start_pos = { line = start_line, character = start_col }
+    local end_pos = { line = end_line, character = end_col }
+    local edit_range = {
+      start = start_pos
+    }
+
+    edit_range["end"] = end_pos
+
+    table.insert(edits, {
+      range = edit_range,
+      newText = sorted_classes
+    })
+  end
+
+  vim.lsp.util.apply_text_edits(edits, bufnr)
+end
+
 function M.buf_sort_tailwind_classes(bufnr, opts)
   opts = make_options(opts)
   bufnr = bufnr or vim.api.nvim_win_get_buf(0)
 
-  local start = opts.start or 0
-  local end_ = opts.end_ or -1
+  if opts.use_treesitter then
+    return sort_treesitter(bufnr, opts)
+  end
+
   local ft = Utils.get_current_lang(bufnr, opts.ft)
   local matchers = build_matchers(opts.class_regex[ft])
 
   if #matchers == 0 then return end
 
-  local lines = vim.api.nvim_buf_get_lines(bufnr, start, end_, false)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local text = table.concat(lines, "\n")
   local sort_lookup_tbl = Utils.to_index_tbl(opts.sort_tailwind_classes)
   local edits = {}
@@ -217,6 +274,7 @@ function M.buf_sort_tailwind_classes(bufnr, opts)
 end
 
 function M._on_buf_write()
+  print("test")
   local cwd = vim.fn.getcwd()
   local path = cwd .. "/tailwind.config.js"
 

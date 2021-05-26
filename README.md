@@ -33,9 +33,22 @@ Headwind will remove duplicate class names by default. This can be toggled on or
 
 Headwind will append custom class names by default. They can be prepended instead. Defaults to `false`.
 
+#### class_regex
+
+Patterns to use for matching class strings. Note, this has no effect when using treesitter.
+
 #### run_on_save
 
 Headwind will run on save by default (if a `tailwind.config.js` file is present within your working directory). This can be toggled on or off. Defaults to `true`.
+
+#### use_treesitter
+
+Use treesitter to find class strings. This will be MUCH more accurate with a couple caveats...
+
+- The `class_regex` option has no effect
+- The syntax must be valid for the language. The css `@apply` is not valid css so treesitter can parse it. This requires a postCSS parser which is not supported yet.
+
+Treesitter is OFF by default.
 
 ## Usage
 
