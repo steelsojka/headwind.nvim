@@ -6,7 +6,6 @@
 
 (jsx_attribute
   (property_identifier) @tag
-  (jsx_expression
-    (string) @classes)
+  (jsx_expression) @expression
   (#vim-match? @tag "^(className|class|tw)$")
-  (#offset! @classes 0 1 0 -1)) @test
+  (#headwind-all-types! @expression "string" 1 -1))

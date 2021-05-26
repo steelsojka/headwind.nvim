@@ -157,8 +157,9 @@ local function sort_class_str(class_str, sort_order, opts)
 end
 
 function M.setup(opts)
-  global_options = vim.tbl_extend("force", global_options, opts or {})
+  require "headwind.treesitter".init()
 
+  global_options = vim.tbl_extend("force", global_options, opts or {})
   opts = make_options(opts)
 
   if opts.run_on_save and not is_bound then
@@ -185,17 +186,15 @@ local function sort_treesitter(bufnr, opts)
     local query = ts_query.get_query(lang_tree:lang(), "headwind")
 
     for _, match, data in query:iter_matches(tree:root(), bufnr) do
-      for id, node in pairs(match) do
-        local name = query.captures[id]
+      if type(data.content) == "table" then
+        vim.list_extend(ranges, data.content)
+      else
+        for id, node in pairs(match) do
+          local name = query.captures[id]
 
-        if name == "classes" then
-          local range = {node:range()}
-
-          if type(data.content) == "table" and data.content[1] then
-            range = data.content[1]
+          if name == "classes" then
+            table.insert(ranges, {node:range()})
           end
-
-          table.insert(ranges, range)
         end
       end
     end
@@ -274,7 +273,6 @@ function M.buf_sort_tailwind_classes(bufnr, opts)
 end
 
 function M._on_buf_write()
-  print("test")
   local cwd = vim.fn.getcwd()
   local path = cwd .. "/tailwind.config.js"
 
