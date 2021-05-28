@@ -222,6 +222,37 @@ local function sort_treesitter(bufnr, opts)
   vim.lsp.util.apply_text_edits(edits, bufnr)
 end
 
+function M.visual_sort_tailwind_classes(opts)
+  local range = {Utils.get_visual_selection()}
+  local lines = Utils.get_buf_lines(0, range)
+  local str = table.concat(lines, "\n")
+  local result = M.string_sort_tailwind_classes(str, opts)
+  local edit = {
+    range = {
+      start = {
+        line = range[1],
+        character = range[2]
+      }
+    },
+    newText = result
+  }
+
+  edit.range["end"] = {
+    line = range[3],
+    character = range[4]
+  }
+
+  vim.lsp.util.apply_text_edits({edit}, 0)
+end
+
+function M.string_sort_tailwind_classes(str, opts)
+  opts = make_options(opts)
+
+  local sort_lookup_tbl = Utils.to_index_tbl(opts.sort_tailwind_classes)
+
+  return sort_class_str(str, sort_lookup_tbl, opts)
+end
+
 function M.buf_sort_tailwind_classes(bufnr, opts)
   opts = make_options(opts)
   bufnr = bufnr or vim.api.nvim_win_get_buf(0)

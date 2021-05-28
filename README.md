@@ -64,3 +64,17 @@ Sorts all tailwind class matchers in the buffer and edits them in place.
 
 - `bufnr`: The buffer to use. Will use active buffer if not provided.
 - `opts`: Options that will override the global and user defined options.
+
+#### visual_sort_tailwind_classes([opts])
+
+Sorts all tailwind classes in the visual selection. Note, everything in the visual selection will be sorted as a class.
+This is useful for one off sorting.
+
+- `opts`: Options that will override the global and user defined options.
+
+#### string_sort_tailwind_classes([str], [opts])
+
+Sorts the given tailwind class string and returns the result.
+
+- `str`: The string to sort.
+- `opts`: Options that will override the global and user defined options.
