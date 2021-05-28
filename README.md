@@ -48,7 +48,7 @@ Use treesitter to find class strings. This will be MUCH more accurate with a cou
 - The `class_regex` option has no effect
 - The syntax must be valid for the language. The css `@apply` is not valid css so treesitter can parse it. This requires a postCSS parser which is not supported yet.
 
-**Treesitter is OFF by default, although it is highly recommended that you use it. This method will be the primary supported method, since it is superior to regular pattern matching.
+**Treesitter is ON by default. This method will be the primary supported method, since it is superior to regular pattern matching.
 If you have the correct treesitter parser installed then this flag just needs to be set to true.
 For more information on installing parsers look at the** [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) plugin.
 

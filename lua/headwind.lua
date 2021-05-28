@@ -11,7 +11,7 @@ local default_options = {
   remove_duplicates = true,
   prepend_custom_classes = false,
   custom_tailwind_prefix = "",
-  use_treesitter = false
+  use_treesitter = true
 }
 
 local global_options = {}
